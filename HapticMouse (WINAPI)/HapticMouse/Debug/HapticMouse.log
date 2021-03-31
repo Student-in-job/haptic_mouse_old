@@ -1,0 +1,3 @@
+﻿  libHaptics.cpp
+C:\Users\vitaliy\Google Drive (vitalik.pak@khu.ac.kr)\repos\HapticMouse (WINAPI)\HapticMouse\libHaptics.h(32,2): warning C4091: 'static ': ignored on left of 'Velosity' when no variable is declared
+  HapticMouse.vcxproj -> C:\Users\vitaliy\Google Drive (vitalik.pak@khu.ac.kr)\repos\HapticMouse (WINAPI)\Debug\HapticMouse.exe

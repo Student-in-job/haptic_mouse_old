@@ -1,0 +1,48 @@
+﻿<Window x:Class="HapticMouse.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:HapticMouse"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800" Closing="Window_Closing">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*"/>
+            <ColumnDefinition Width="1*"/>
+        </Grid.ColumnDefinitions>
+        <Menu Grid.Row="0" Grid.ColumnSpan="2">
+            <MenuItem x:Name="mnuFile" Height="29" Header="_File"></MenuItem>
+            <MenuItem x:Name="mnuPort" Header="_Ports"></MenuItem>
+        </Menu>
+        <StackPanel Grid.Column="1" Grid.Row="1">
+            <TextBlock Text="BaudRate" FontSize="14"/>
+            <TextBox Height="30" x:Name="txtBaudRate" Text="115200" PreviewTextInput="txt_NumbersOnly" FontSize="16"></TextBox>
+            <TextBlock Text="Update rate (Hz)" FontSize="14"/>
+            <TextBox Height="30" x:Name="txtUpdateRate" Text="1000" PreviewTextInput="txt_NumbersOnly" FontSize="16"></TextBox>
+            <TextBlock Text="Other" FontSize="14"/>
+            <TextBox Height="30" x:Name="txtFrequency" Text="0" PreviewTextInput="txt_NumbersOnly" FontSize="16"></TextBox>
+            <TextBlock Text="Other" FontSize="14"/>
+            <TextBox Height="30" x:Name="txtLast" Text="0" PreviewTextInput="txt_NumbersOnly" FontSize="16"></TextBox>
+            <Separator Height="5"/>
+            <Button x:Name="btnSend" Height="30" VerticalAlignment="Top" Click="btnSend_Click">
+                <TextBlock Text="Send data"/>
+            </Button>
+            <Separator Height="10"/>
+            <Button x:Name="btnStop" Height="30" VerticalAlignment="Top" IsEnabled="False" Click="btnStop_Click">
+                <TextBlock Text="Stop"/>
+            </Button>
+        </StackPanel>
+        <TextBox Grid.Row="1"
+                 Grid.Column="0"
+                 TextWrapping="Wrap"
+                 VerticalScrollBarVisibility="Visible"
+                 Name ="txtOutput" Height="400">            
+        </TextBox>
+    </Grid>
+</Window>

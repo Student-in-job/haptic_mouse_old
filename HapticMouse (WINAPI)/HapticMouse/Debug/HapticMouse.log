@@ -1,3 +1,12 @@
 ﻿  libHaptics.cpp
-C:\Users\vitaliy\Google Drive (vitalik.pak@khu.ac.kr)\repos\HapticMouse (WINAPI)\HapticMouse\libHaptics.h(32,2): warning C4091: 'static ': ignored on left of 'Velosity' when no variable is declared
-  HapticMouse.vcxproj -> C:\Users\vitaliy\Google Drive (vitalik.pak@khu.ac.kr)\repos\HapticMouse (WINAPI)\Debug\HapticMouse.exe
+C:\Users\vitaliy\Google Drive (vitalik.pak@khu.ac.kr)\repos\haptic_mouse\HapticMouse (WINAPI)\HapticMouse\libHaptics.h(33,2): warning C4091: 'static ': ignored on left of 'Velosity' when no variable is declared
+  Main.cpp
+C:\Users\vitaliy\Google Drive (vitalik.pak@khu.ac.kr)\repos\haptic_mouse\HapticMouse (WINAPI)\HapticMouse\libHaptics.h(33,2): warning C4091: 'static ': ignored on left of 'Velosity' when no variable is declared
+  MainWindow.cpp
+C:\Users\vitaliy\Google Drive (vitalik.pak@khu.ac.kr)\repos\haptic_mouse\HapticMouse (WINAPI)\HapticMouse\libHaptics.h(33,2): warning C4091: 'static ': ignored on left of 'Velosity' when no variable is declared
+C:\Users\vitaliy\Google Drive (vitalik.pak@khu.ac.kr)\repos\haptic_mouse\HapticMouse (WINAPI)\HapticMouse\MainWindow.cpp(47,82): warning C4244: 'argument': conversion from 'double' to 'LONG', possible loss of data
+C:\Users\vitaliy\Google Drive (vitalik.pak@khu.ac.kr)\repos\haptic_mouse\HapticMouse (WINAPI)\HapticMouse\MainWindow.cpp(38,25): warning C4101: 'buffer': unreferenced local variable
+C:\Users\vitaliy\Google Drive (vitalik.pak@khu.ac.kr)\repos\haptic_mouse\HapticMouse (WINAPI)\HapticMouse\MainWindow.cpp(248,31): warning C4018: '<': signed/unsigned mismatch
+  Generating Code...
+C:\Users\vitaliy\Google Drive (vitalik.pak@khu.ac.kr)\repos\haptic_mouse\HapticMouse (WINAPI)\HapticMouse\MainWindow.cpp(175): warning C4715: 'MainWindow::HandleMessage': not all control paths return a value
+  HapticMouse.vcxproj -> C:\Users\vitaliy\Google Drive (vitalik.pak@khu.ac.kr)\repos\haptic_mouse\HapticMouse (WINAPI)\Debug\HapticMouse.exe

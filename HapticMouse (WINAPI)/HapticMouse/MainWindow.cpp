@@ -1,11 +1,13 @@
 #include "MainWindow.h"
 #include "Shlwapi.h"
 #pragma comment(lib, "Shlwapi.lib")
+#include <atlstr.h>
 
 #define IDM_FILE_NEW   1
 #define IDM_FILE_OPEN  2
 #define IDM_FILE_CLOSE 3
 #define IDT_TIMER  11001
+#define IDB_TEST   21001
 
 LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -28,6 +30,7 @@ LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam
             {
                 pThis->CreateMenus(pThis->m_hwnd);
                 pThis->CreateLabels(pThis->m_hwnd);
+                pThis->CreateButtons(pThis->m_hwnd);
                 pThis->InitTimer(pThis->m_hwnd);
                 break;
             }
@@ -66,7 +69,7 @@ LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam
                         pThis->COMactivated = true;
                     }
                 }
-                                
+
                 switch (LOWORD(wParam))
                 {
                     case IDM_FILE_NEW:
@@ -76,7 +79,9 @@ LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam
                     case IDM_FILE_CLOSE:
                         SendMessage(hWnd, WM_CLOSE, 0, 0);
                         break;
-                    case Material::PAPER:
+                    case IDB_TEST:
+                        //MessageBoxW(NULL, L"Button clicked", L"TEST", MB_OK);
+                        pThis->OnTestClick();
                         break;
                     default:
                         break;
@@ -219,6 +224,12 @@ void MainWindow::CreateMenus(HWND hWnd)
     SetMenu(hWnd, this->hMenuBar);
 }
 
+void MainWindow::CreateButtons(HWND hWnd)
+{
+    HWND hwndButton = CreateWindowW(L"BUTTON", L"Test", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 340, 455, 100, 25,
+        hWnd, (HMENU)IDB_TEST, NULL, NULL);
+};
+
 void MainWindow::SetLabelValue(HWND label, LONG value)
 {
     wchar_t buffer[256];
@@ -313,6 +324,7 @@ int MainWindow::ConnectPort(int port)
     COMMTIMEOUTS timeouts = { 0 };   // initializing timeouts structure
     char serialbuffer[64] = { 0 };   // buffer to send and receive data
     wchar_t sPort[100];
+
     swprintf(sPort, 100, L"\\\\.\\COM%u", this->serialPorts.find(port)->second);
 
     this->hComm = CreateFile(sPort,    // port friendly name
@@ -352,14 +364,20 @@ int MainWindow::ConnectPort(int port)
     return 1;
 }
 
+
+/// <summary>
+/// Sends a message to serial port
+/// </summary>
+/// <param name="message"></param>
 void MainWindow::SendMessageToCOM(char message[])
 {
     DWORD BytesWritten = 0;
+    // TODO: define message body
     //char message[] = "#01";
     BOOL Status = WriteFile(this->hComm,   // Handle to the Serialport
-        message,                     // Data to be written to the port
-        sizeof(message),             // No of bytes to write into the port
-        &BytesWritten,               // No of bytes written to the port
+        message,                           // Data to be written to the port
+        sizeof(message),                   // No of bytes to write into the port
+        &BytesWritten,                     // No of bytes written to the port
         NULL);
     if (Status == FALSE)
     {
@@ -384,9 +402,9 @@ void MainWindow::OnLoadPicture(HDC hdc)
     wchar_t* pFilePath;
     pFilePath = filePath;
 
-    wchar_t file[] = L"wood.jpg";
-    wchar_t* pFile;
-    pFile = file;
+    //wchar_t file[] = L"wood.jpg";
+    //wchar_t* pFile;
+    //pFile = file;
 
     //wchar_t* pName = const_cast<wchar_t*>(this->vibroFeedback.MaterialPictures[Material::PAPER].c_str());
     wchar_t* pName = const_cast<wchar_t*>(this->vibroFeedback.MaterialPictures[Material::WOOD].c_str());
@@ -399,3 +417,19 @@ void MainWindow::OnLoadPicture(HDC hdc)
     Image image(PathCombineW(pFullFilePath, PathCombineW(pFilePath, pDirectory, pFolder) , pName));
     graphics.DrawImage(&image, 10, 10, 430, 270);
 };
+
+void MainWindow::OnTestClick()
+{
+    libCSV lib = libCSV("test_data.csv");
+    std::vector<double> values = lib.readVals();
+    unsigned long count = values.size();
+    
+    
+
+    wchar_t message[100];
+
+    swprintf(message, 100, L"The array has %u  items", count);
+
+    MessageBoxW(NULL, message, L"error", MB_OK);
+};
+

@@ -1,14 +1,16 @@
 #pragma once
 #include <Strsafe.h>
 #include "libHaptics.h"
+#include "libCSV.h"
 #include <chrono>
 #include <time.h>
 #include <string>
 #include <vector>
 #include <Windows.h>
 #include <stdio.h>
-
 #include <gdiplus.h>
+
+
 using namespace Gdiplus;
 #pragma comment (lib,"Gdiplus.lib")
 
@@ -51,8 +53,10 @@ class MainWindow
 		void CheckPortMenuItems();
 		void CreateLabels(HWND hWnd);
 		void CreateMenus(HWND hWnd);
+		void CreateButtons(HWND hWnd);
 		void SetLabelValue(HWND label, LONG value);
 		int ConnectPort(int port);
 		void SendMessageToCOM(char message[]);
 		void OnLoadPicture(HDC hdc);
+		void OnTestClick();
 };

@@ -2,12 +2,16 @@
 #include "Shlwapi.h"
 #pragma comment(lib, "Shlwapi.lib")
 #include <atlstr.h>
+//#include <thread>
 
 #define IDM_FILE_NEW   1
 #define IDM_FILE_OPEN  2
 #define IDM_FILE_CLOSE 3
 #define IDT_TIMER  11001
 #define IDB_TEST   21001
+
+std::string resourceRoot;
+#define RESOURCE_PATH(p)    (char*)((resourceRoot+std::string(p)).c_str())
 
 LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -47,7 +51,7 @@ LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam
                 Sleep(50 + randomInc);
                 std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now(); 
                 std::chrono::duration<double, std::milli> elapsed = now - pThis->timepoint;
-                pThis->SetLabelValue(pThis->labelMouseY, Velosity::LinearVelosity(rotations, elapsed.count()));
+                pThis->SetLabelValue(pThis->labelMouseY, LinearVelosity(rotations, elapsed.count()));
                 pThis->timepoint = std::chrono::high_resolution_clock::now();
 
                 char message[20] = "#01";
@@ -77,6 +81,7 @@ LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam
                         MessageBeep(MB_ICONINFORMATION);
                         break;
                     case IDM_FILE_CLOSE:
+                        atexit(WaitForLibClose);
                         SendMessage(hWnd, WM_CLOSE, 0, 0);
                         break;
                     case IDB_TEST:
@@ -103,7 +108,8 @@ LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam
 MainWindow::MainWindow() :m_hwnd(NULL)
 {
     this->COMactivated = false;
-    this->vibroFeedback = VibroFeedback();
+    materialPictures = InitPictures();
+    this->main2();
 }
 
 BOOL MainWindow::Create(PCWSTR lpWindowName, DWORD dwStyle, DWORD dwExStyle, int x, int y,
@@ -389,32 +395,14 @@ void MainWindow::SendMessageToCOM(char message[])
 void MainWindow::OnLoadPicture(HDC hdc)
 {
     Graphics graphics(hdc);
-
-    wchar_t directory[MAX_PATH];
-    GetCurrentDirectoryW(MAX_PATH, directory);
-    wchar_t* pDirectory;
-    pDirectory = directory;
-
-    wchar_t folder[] = L"images";
-    wchar_t* pFolder = folder;
-
-    wchar_t filePath[MAX_PATH];
-    wchar_t* pFilePath;
-    pFilePath = filePath;
-
-    //wchar_t file[] = L"wood.jpg";
-    //wchar_t* pFile;
-    //pFile = file;
-
-    //wchar_t* pName = const_cast<wchar_t*>(this->vibroFeedback.MaterialPictures[Material::PAPER].c_str());
-    wchar_t* pName = const_cast<wchar_t*>(this->vibroFeedback.MaterialPictures[Material::WOOD].c_str());
+    
+    wchar_t* pName = const_cast<wchar_t*>(this->materialPictures[Material::WOOD].c_str());
 
     wchar_t fullFilePath[MAX_PATH];
     wchar_t* pFullFilePath;
     pFullFilePath = fullFilePath;
         
-    //Loading images size 800x500
-    Image image(PathCombineW(pFullFilePath, PathCombineW(pFilePath, pDirectory, pFolder) , pName));
+    Image image(PathCombineW(pFullFilePath, this->imageDirectory.c_str(), pName));
     graphics.DrawImage(&image, 10, 10, 430, 270);
 };
 
@@ -424,12 +412,41 @@ void MainWindow::OnTestClick()
     std::vector<double> values = lib.readVals();
     unsigned long count = values.size();
     
-    
-
     wchar_t message[100];
-
     swprintf(message, 100, L"The array has %u  items", count);
 
     MessageBoxW(NULL, message, L"error", MB_OK);
 };
 
+
+void MainWindow::main2()
+{
+    wchar_t directory[MAX_PATH];
+    GetCurrentDirectoryW(MAX_PATH, directory);
+    wchar_t* pDirectory;
+    pDirectory = directory;
+
+    wchar_t filePath[MAX_PATH];
+    wchar_t* pFilePath;
+    pFilePath = filePath;
+
+    wchar_t folder[] = L"images";
+    wchar_t* pFolder = folder;
+    PathCombineW(pFilePath, pDirectory, pFolder);
+    std::wstring wsImageDirectory(pFilePath);
+    this->imageDirectory = wsImageDirectory;
+
+    std::wstring wst(pDirectory);
+    std::string st = std::string(wst.begin(), wst.end());
+    resourceRoot = st;
+
+    this->hapticMdlPath = RESOURCE_PATH("\\resources\\haptic_models\\");
+    LoadModel(this->hapticMdlPath, 84);
+
+    // TODO: start two threads with model results
+    std::thread hapticsThread(updateHaptics);
+    hapticsThread.detach();
+    std::thread vibroGenThread(updateVibrationPattern);
+    vibroGenThread.detach();
+    atexit(WaitForLibClose);
+}

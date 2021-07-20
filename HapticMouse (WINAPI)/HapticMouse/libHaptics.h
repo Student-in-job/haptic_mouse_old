@@ -2,11 +2,14 @@
 
 #include <map>
 #include <string>
+#include <thread>
 
 #define LOGITECH_STEPS_COUNT	48		// Number of steps in one 360 degree rotation of mouse wheel
 #define ROTATION_ANGLE			360		// degrees in full rotation
 #define RADIAN_ANGLE			57.2958	// Radian to angle conversion
 #define MOUSE_DIAMETER			2.48	// mouse wheel diameter in cm
+
+void WaitForLibClose(void);
 
 // TODO: place all materials
 enum Material
@@ -15,29 +18,9 @@ enum Material
 	WOOD  = 20002
 };
 
+std::map<int, std::wstring> InitPictures();
+double LinearVelosity(int rotations, double time);
 
-struct FrequencyRange {
-	double min;
-	double max;
-};
-
-static class Velosity
-{
-	public:
-		/// <summary>
-		/// Returns Linear velosity
-		/// </summary>
-		/// <param name="rotations"></param>
-		/// <returns></returns>
-		static double LinearVelosity(int rotations, double time);
-};
-
-class VibroFeedback
-{
-	public:
-		std::map<int, FrequencyRange> materials;
-		std::map<int, std::wstring> MaterialPictures;
-		VibroFeedback();
-	private:
-		void InitVibrofeedbackRange();
-};
+void LoadModel(std::string path, int mdl);
+void updateHaptics(void);
+void updateVibrationPattern(void);

@@ -78,6 +78,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>E:\repos\haptic_mouse\HapticMouse %28WINAPI%29\HapticMouse\ext;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -114,7 +115,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -145,12 +146,13 @@
     <ClCompile Include="MainWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="interpol_rbf.h" />
     <ClInclude Include="libCSV.h" />
     <ClInclude Include="libHaptics.h" />
     <ClInclude Include="MainWindow.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="images\paper.jpg" />
+    <ClInclude Include="read_data.h" />
+    <ClInclude Include="shared.h" />
+    <ClInclude Include="sharedInit.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="test_data.csv">

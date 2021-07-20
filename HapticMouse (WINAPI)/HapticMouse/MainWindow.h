@@ -3,13 +3,12 @@
 #include "libHaptics.h"
 #include "libCSV.h"
 #include <chrono>
-#include <time.h>
 #include <string>
+#include <time.h>
 #include <vector>
 #include <Windows.h>
 #include <stdio.h>
 #include <gdiplus.h>
-
 
 using namespace Gdiplus;
 #pragma comment (lib,"Gdiplus.lib")
@@ -47,8 +46,9 @@ class MainWindow
 		std::map<int, int> serialPorts;
 		bool COMactivated;
 		int currentPort;
-		VibroFeedback vibroFeedback;
-		FrequencyRange vibroRange;
+		std::map<int, std::wstring> materialPictures;
+		std::string hapticMdlPath;
+		std::wstring imageDirectory;
 		// Methods
 		void CheckPortMenuItems();
 		void CreateLabels(HWND hWnd);
@@ -59,4 +59,5 @@ class MainWindow
 		void SendMessageToCOM(char message[]);
 		void OnLoadPicture(HDC hdc);
 		void OnTestClick();
+		void main2();
 };

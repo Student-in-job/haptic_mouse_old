@@ -38,11 +38,18 @@
     <ClInclude Include="libCSV.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="images\paper.jpg">
-      <Filter>Source Files</Filter>
-    </Image>
+    <ClInclude Include="interpol_rbf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="read_data.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shared.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sharedInit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="test_data.csv" />

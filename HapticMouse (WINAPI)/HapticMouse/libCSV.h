@@ -22,5 +22,6 @@ public:
 	std::ofstream BeginWrite();
 	void EndWrite(std::ofstream& stream);
 	void AppendValue(std::ofstream& stream, double value);
+	static char* GetFileName(std::string& path);
 };
 

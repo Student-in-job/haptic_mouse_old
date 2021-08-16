@@ -36,3 +36,4 @@ obj/
 .vs/
 Debug/
 Release/
+output/

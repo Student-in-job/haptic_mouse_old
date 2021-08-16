@@ -18,13 +18,13 @@ class MainWindow
 	public:
 		static HANDLE hComm;
 		static std::thread* comThread;
-		static bool comThreadInitialized;
 		static bool comThreadRunning;
 		static LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 		static void CALLBACK ComSearch(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime);
 		static std::vector<std::wstring> GetCOMPortNames(HWND hWnd);
 		static void SendMessageToCOM(char message[]);
 		static void ComThreadRun(void);
+		static void ComThreadToFile(void);
 		MainWindow();
 		BOOL Create(PCWSTR lpWindowName, DWORD dwStyle, DWORD dwExStyle = 0, int x = CW_USEDEFAULT, int y = CW_USEDEFAULT,
 			int nWidth = CW_USEDEFAULT, int nHeight = CW_USEDEFAULT, HWND hWndParent = 0, HMENU hMenu = 0);

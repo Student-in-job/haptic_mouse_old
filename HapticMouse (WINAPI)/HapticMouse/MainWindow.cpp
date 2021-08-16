@@ -13,12 +13,12 @@
 
 std::string resourceRoot;
 #define RESOURCE_PATH(p)    (char*)((resourceRoot+std::string(p)).c_str())
-#define OUTPUT_PATH(p)    (char*)((resourceRoot+std::string(p)).c_str())
+#define OUTPUT_PATH(p)      (char*)((resourceRoot+std::string(p)).c_str())
 
 HANDLE MainWindow::hComm;
 std::thread* MainWindow::comThread;
-bool MainWindow::comThreadInitialized;
 bool MainWindow::comThreadRunning;
+static std::string outputDir = "output\\";
 
 LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -44,7 +44,7 @@ LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam
                 pThis->CreateButtons(pThis->m_hwnd);
                 pThis->CreateStatusbar(pThis->m_hwnd);
                 pThis->InitWindow();
-                pThis->InitTimer(pThis->m_hwnd);
+                //pThis->InitTimer(pThis->m_hwnd);
                 break;
             }
             case WM_MOUSEWHEEL: //Aproximation of speed of scrolling the mouse wheel
@@ -94,6 +94,7 @@ LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam
                     mdl = ItemIndex + 1;
 
                     InvalidateRect(pThis->m_hwnd, NULL, TRUE);
+                    pThis->SetLabelValue(pThis->labelModel, (long)mdl);
 
                     /*TCHAR  ListItem[256];
                     (TCHAR)SendMessage((HWND)lParam, (UINT)CB_GETLBTEXT,
@@ -164,6 +165,10 @@ BOOL MainWindow::Create(PCWSTR lpWindowName, DWORD dwStyle, DWORD dwExStyle, int
 
     RegisterClass(&wc);
 
+    // Window dimension
+    nWidth = 470;
+    nHeight = 600;
+
     m_hwnd = CreateWindowEx(
         dwExStyle, ClassName(), lpWindowName, dwStyle, x, y,
         nWidth, nHeight, hWndParent, hMenu, GetModuleHandle(NULL), this
@@ -200,19 +205,19 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
             EndPaint(this->m_hwnd, &ps);
             return 0;
         }
-        //case WM_MOVE:  // Event: Changing window position
-        //{
-        //    RECT rect;
-        //    wchar_t buf[10];
-        //    GetWindowRect(this->m_hwnd, &rect);
+        case WM_MOVE:  // Event: Changing window position
+        {
+            RECT rect;
+            wchar_t buf[10];
+            GetWindowRect(this->m_hwnd, &rect);
 
-        //    StringCbPrintfW(buf, sizeof(buf) / sizeof(wchar_t), L"%ld", rect.left);
-        //    SetWindowTextW(this->label1, buf);
+            StringCbPrintfW(buf, sizeof(buf) / sizeof(wchar_t), L"%ld", rect.left);
+            SetWindowTextW(this->labelMouseX, buf);
 
-        //    StringCbPrintfW(buf, sizeof(buf) / sizeof(wchar_t), L"%ld", rect.top);
-        //    SetWindowTextW(this->label2, buf);
-        //    break;
-        //}
+            StringCbPrintfW(buf, sizeof(buf) / sizeof(wchar_t), L"%ld", rect.top);
+            SetWindowTextW(this->labelMouseY, buf);
+            break;
+        }
         case WM_SIZE: // Event: Resizing window
         {
             SendMessage(this->statusBar, WM_SIZE, 0, 0);
@@ -234,10 +239,10 @@ void MainWindow::CreateLabels(HWND hWnd)
     CreateWindowW(L"static", L"Velocity: ", WS_CHILD | WS_VISIBLE, 10, 360, 125, 25, hWnd, (HMENU)5, NULL, NULL);
     this->labelSpeed = CreateWindowW(L"static", L"0", WS_CHILD | WS_VISIBLE, 150, 360, 290, 25, hWnd, (HMENU)6, NULL, NULL);
 
-    CreateWindowW(L"static", L"Mouse position x: ", WS_CHILD | WS_VISIBLE, 10, 390, 125, 25, hWnd, (HMENU)7, NULL, NULL);
+    CreateWindowW(L"static", L"Window position x: ", WS_CHILD | WS_VISIBLE, 10, 390, 125, 25, hWnd, (HMENU)7, NULL, NULL);
     this->labelMouseX = CreateWindowW(L"static", L"0", WS_CHILD | WS_VISIBLE, 150, 390, 290, 25, hWnd, (HMENU)8, NULL, NULL);
 
-    CreateWindowW(L"static", L"Mouse position y: ", WS_CHILD | WS_VISIBLE, 10, 420, 125, 25, hWnd, (HMENU)9, NULL, NULL);
+    CreateWindowW(L"static", L"Window position y: ", WS_CHILD | WS_VISIBLE, 10, 420, 125, 25, hWnd, (HMENU)9, NULL, NULL);
     this->labelMouseY = CreateWindowW(L"static", L"0", WS_CHILD | WS_VISIBLE, 150, 420, 290, 25, hWnd, (HMENU)10, NULL, NULL);
 }
 
@@ -482,7 +487,6 @@ void MainWindow::OnLoadPicture(HDC hdc)
         pImage = const_cast<wchar_t*>(this->materialPictures[mdl].c_str());
         pName = pImage;
     }
-    //wchar_t* pName = const_cast<wchar_t*>(this->materialPictures[Material::WOOD].c_str());
 
     wchar_t fullFilePath[MAX_PATH];
     wchar_t* pFullFilePath;
@@ -509,7 +513,6 @@ void MainWindow::InitWindow()
     size_t hight = 50 * (this->materialPictures.size() + 1);
     SetWindowPos(this->comboBox, NULL, 10, 455, 325, hight, NULL);
     SendMessage(this->comboBox, CB_SETCURSEL, 0, 0);
-    MainWindow::comThreadInitialized = false;
     MainWindow::comThreadRunning = false;
 }
 
@@ -525,11 +528,12 @@ void MainWindow::OnStartClick()
 
     MessageBoxW(NULL, message, L"error", MB_OK);
     */
-    LoadModel(this->hapticMdlPath, mdl);
+    //LoadModel(this->hapticMdlPath, mdl);
+    LoadModel(this->hapticMdlPath, 84);
 
     MainWindow::comThreadRunning = true;
     MainWindow::comThread = new std::thread(MainWindow::ComThreadRun);
-    //MainWindow::comThread = comThread;
+    //MainWindow::comThread = new std::thread(MainWindow::ComThreadToFile);
     MainWindow::comThread->detach();
 
     // TODO: start two threads with model results
@@ -546,28 +550,18 @@ void MainWindow::OnStartClick()
 
 void MainWindow::OnStopClick()
 {
-    /*MainWindow::comThreadRunning = false;
+    MainWindow::comThreadRunning = false;
     simulationRunning = false;
-    simulationFinished = true;*/
-    std::chrono::system_clock::time_point currentTime = std::chrono::system_clock::now();
-    std::time_t time = std::chrono::system_clock::to_time_t(currentTime);
-    //std::string timeString = std::format("%F %T", std::chrono::system_clock::now());
-    char timeString[100];
-    std::strftime(timeString, 100, "%F_%H-%M-%S", localtime(&time));
+    simulationFinished = true;
 
-    //char* timeString = ctime(&time);
-
-    char* fileName = new char[this->outputDirectory.length() + 1];
-    strcpy(fileName,  this->outputDirectory.c_str());
-
-    strcat(fileName, timeString);
-    strcat(fileName, ".txt");
-
+    /*
     libCSV lib = libCSV("test_data.csv");
     std::vector<double> values = lib.readVals();
-
+    
+    char* fileName = libCSV::GetFileName(this->outputDirectory);
     libCSV outlib = libCSV(fileName);
     outlib.WriteVals(values);
+    */
 };
 
 void MainWindow::InitPaths()
@@ -599,19 +593,43 @@ void MainWindow::ComThreadRun(void)
 {
     using namespace std::chrono_literals;
     char message[10];
+    /*while (MainWindow::comThreadRunning)
+    {
+        sprintf(message, "$1,%u#", 25);
+        MainWindow::SendMessageToCOM(message);
+        
+        std::this_thread::sleep_for(2s);
+        sprintf(message, "$1,%u#", 50);
+        MainWindow::SendMessageToCOM(message);
+        
+        std::this_thread::sleep_for(2s);
+        sprintf(message, "$1,%u#", 100);
+        MainWindow::SendMessageToCOM(message);
+    }*/
+
     while (MainWindow::comThreadRunning)
     {
-        std::this_thread::sleep_for(2s);
-        sprintf(message, "$1, %u#", 25);
-        MainWindow::SendMessageToCOM(message);
-        std::this_thread::sleep_for(2s);
-        
-        sprintf(message, "$1, %u#", 50);
-        MainWindow::SendMessageToCOM(message);
-        
-        sprintf(message, "$1, %u#", 100);
+        std::this_thread::sleep_for(100ms);
+        sprintf(message, "$1,%u#", (int)vibrationVal);
         MainWindow::SendMessageToCOM(message);
     }
     std::this_thread::sleep_for(2s);
-    sprintf(message, "$1, %u#", 0);
+    sprintf(message, "$1,%u#", 0);
+}
+
+void MainWindow::ComThreadToFile(void)
+{
+    using namespace std::chrono_literals;
+    char message[10];
+
+    char* fileName = libCSV::GetFileName(outputDir);
+    libCSV outlib = libCSV(fileName);
+    std::ofstream stream = outlib.BeginWrite();
+    
+    while (MainWindow::comThreadRunning)
+    {
+        std::this_thread::sleep_for(100ms);
+        outlib.AppendValue(stream, vibrationVal);
+    }
+    outlib.EndWrite(stream);
 }

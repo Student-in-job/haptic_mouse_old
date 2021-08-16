@@ -1,4 +1,5 @@
 #include "libCSV.h"
+#include <chrono>
 
 std::vector<std::string> libCSV::ParseRow(const std::string& row) {
     std::vector<std::string> fields;
@@ -105,4 +106,20 @@ void libCSV::AppendValue(std::ofstream& stream, double value)
     char buffer[200];
     sprintf(buffer, "%F,", value);
     stream << buffer;
+}
+
+char* libCSV::GetFileName(std::string& path)
+{
+    std::chrono::system_clock::time_point currentTime = std::chrono::system_clock::now();
+    std::time_t time = std::chrono::system_clock::to_time_t(currentTime);
+    char timeString[100];
+    std::strftime(timeString, 100, "%F_%H-%M-%S", localtime(&time));
+
+    char* fileName = new char[path.length() + 1];
+    strcpy(fileName, path.c_str());
+
+    strcat(fileName, timeString);
+    strcat(fileName, ".txt");
+
+    return fileName;
 }

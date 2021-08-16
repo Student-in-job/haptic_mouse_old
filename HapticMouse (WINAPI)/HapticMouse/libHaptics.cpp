@@ -246,7 +246,9 @@ void vibroOut(double vibroVal, int mdl)
 	if (vibroVal > 10.0)vibroVal = 10.0;
 	if (vibroVal < -10.0)vibroVal = -10.0;
 
-	cout << "Result: " << vibroVal << endl;
+	vibrationVal = vibroVal;
+
+	//cout << "Result: " << vibroVal << endl;
 }
 
 void updateHaptics(void)

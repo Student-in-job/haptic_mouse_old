@@ -18,6 +18,8 @@ static int faceInContact;
 static double magVel = 100;
 static int mdl = -1;
 
+static double vibrationVal;
+
 // a flag that indicates if the haptic simulation is currently running
 static bool simulationRunning = false;
 

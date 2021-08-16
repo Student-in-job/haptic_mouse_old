@@ -16,14 +16,19 @@ using namespace Gdiplus;
 class MainWindow
 {
 	public:
+		static HANDLE hComm;
+		static std::thread* comThread;
+		static bool comThreadInitialized;
+		static bool comThreadRunning;
 		static LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 		static void CALLBACK ComSearch(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime);
 		static std::vector<std::wstring> GetCOMPortNames(HWND hWnd);
+		static void SendMessageToCOM(char message[]);
+		static void ComThreadRun(void);
 		MainWindow();
 		BOOL Create(PCWSTR lpWindowName, DWORD dwStyle, DWORD dwExStyle = 0, int x = CW_USEDEFAULT, int y = CW_USEDEFAULT,
 			int nWidth = CW_USEDEFAULT, int nHeight = CW_USEDEFAULT, HWND hWndParent = 0, HMENU hMenu = 0);
 		HWND Window() const;
-		HWND GetHWND();
 	protected:
 		PCWSTR ClassName() const;
 		void InitTimer(HWND hWnd);
@@ -31,13 +36,14 @@ class MainWindow
 	private:
 		// GUI
 		HWND m_hwnd;
-		HWND label1;
-		HWND label2;
-		HWND labelStat;
+		HWND labelPort;
+		HWND labelModel;
+		HWND labelSpeed;
 		HWND labelMouseX;
 		HWND labelMouseY;
 		HMENU hMenuBar;
-		HANDLE hComm;
+		HWND comboBox;
+		HWND statusBar;		
 
 		ULONG_PTR gdiplusToken;
 		GdiplusStartupInput gdiplusStartupInput;
@@ -49,15 +55,24 @@ class MainWindow
 		std::map<int, std::wstring> materialPictures;
 		std::string hapticMdlPath;
 		std::wstring imageDirectory;
+		std::string outputDirectory;
+		
 		// Methods
 		void CheckPortMenuItems();
 		void CreateLabels(HWND hWnd);
 		void CreateMenus(HWND hWnd);
+		void CreateCombobox(HWND hWnd);
+		void CreateStatusbar(HWND hWnd);
 		void CreateButtons(HWND hWnd);
 		void SetLabelValue(HWND label, LONG value);
+		void SetLabelValue(HWND label, double value);
+		void SetLabelValue(HWND label, wchar_t* value);
+		void SetComboValue(HWND hWnd, std::wstring value);
+		void SetStatusValue(std::wstring value, int part);
 		int ConnectPort(int port);
-		void SendMessageToCOM(char message[]);
+		void InitWindow();
 		void OnLoadPicture(HDC hdc);
-		void OnTestClick();
-		void main2();
+		void OnStartClick();
+		void OnStopClick();
+		void InitPaths();
 };

@@ -2,16 +2,23 @@
 #include "Shlwapi.h"
 #pragma comment(lib, "Shlwapi.lib")
 #include <atlstr.h>
-//#include <thread>
+#include <CommCtrl.h>
 
-#define IDM_FILE_NEW   1
-#define IDM_FILE_OPEN  2
-#define IDM_FILE_CLOSE 3
+#define IDM_FILE_NEW   10001
+#define IDM_FILE_OPEN  10002
+#define IDM_FILE_CLOSE 10003
 #define IDT_TIMER  11001
-#define IDB_TEST   21001
+#define IDB_START  21001
+#define IDB_STOP   21002
 
 std::string resourceRoot;
 #define RESOURCE_PATH(p)    (char*)((resourceRoot+std::string(p)).c_str())
+#define OUTPUT_PATH(p)    (char*)((resourceRoot+std::string(p)).c_str())
+
+HANDLE MainWindow::hComm;
+std::thread* MainWindow::comThread;
+bool MainWindow::comThreadInitialized;
+bool MainWindow::comThreadRunning;
 
 LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -22,7 +29,6 @@ LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam
         CREATESTRUCT* pCreate = (CREATESTRUCT*)lParam;
         pThis = (MainWindow*)pCreate->lpCreateParams;
         SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)pThis);
-
         pThis->m_hwnd = hWnd;
     }
     else
@@ -30,20 +36,23 @@ LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam
         pThis = (MainWindow*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
         
         switch (uMsg) {
-            case WM_CREATE:
+            case WM_CREATE: // Initialization of interface and application
             {
                 pThis->CreateMenus(pThis->m_hwnd);
                 pThis->CreateLabels(pThis->m_hwnd);
+                pThis->CreateCombobox(pThis->m_hwnd);
                 pThis->CreateButtons(pThis->m_hwnd);
+                pThis->CreateStatusbar(pThis->m_hwnd);
+                pThis->InitWindow();
                 pThis->InitTimer(pThis->m_hwnd);
                 break;
             }
-            case WM_MOUSEWHEEL:
+            case WM_MOUSEWHEEL: //Aproximation of speed of scrolling the mouse wheel
             {
                 short zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
                 int rotations = abs((int)(zDelta / WHEEL_DELTA));
-                wchar_t buffer[256];
-                pThis->SetLabelValue(pThis->labelStat, rotations);
+                /*wchar_t buffer[256];
+                pThis->SetLabelValue(pThis->labelSpeed, rotations);*/
                 
                 // Detect number of scrolled sections of mouse wheel
                 pThis->timepoint = std::chrono::high_resolution_clock::now();
@@ -51,18 +60,16 @@ LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam
                 Sleep(50 + randomInc);
                 std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now(); 
                 std::chrono::duration<double, std::milli> elapsed = now - pThis->timepoint;
-                pThis->SetLabelValue(pThis->labelMouseY, LinearVelosity(rotations, elapsed.count()));
-                pThis->timepoint = std::chrono::high_resolution_clock::now();
+                
+                //Change the magniture Velocity
+                magVel = LinearVelosity(rotations, elapsed.count());
+                pThis->SetLabelValue(pThis->labelSpeed, magVel);
 
-                char message[20] = "#01";
-                pThis->SendMessageToCOM(message);
                 break;
             }
             case WM_COMMAND:
             {
-                /*wchar_t buf[40];
-                StringCbPrintfW(buf, sizeof(buf) / sizeof(wchar_t), L"%s %d", L"Menu:", LOWORD(wParam));
-                MessageBoxW(0, buf, L"text", MB_OK);*/
+                // Check the chosen port from menu
                 if ((UINT(wParam) > 1000) && (UINT(wParam) < 2000) && (UINT(wParam) != pThis->currentPort))
                 {
                     int result = pThis->ConnectPort(UINT(wParam));
@@ -71,12 +78,34 @@ LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam
                         pThis->currentPort = UINT(wParam);
                         pThis->CheckPortMenuItems();
                         pThis->COMactivated = true;
+
+                        int port = pThis->serialPorts.find(UINT(wParam))->second;
+                        wchar_t format[100];
+                        wchar_t* message = format;
+                        swprintf(format, sizeof(format) / sizeof(wchar_t), L"COM%d port is connected", port);
+                        pThis->SetLabelValue(pThis->labelPort, message);
                     }
                 }
 
+                if (HIWORD(wParam) == CBN_SELCHANGE)
+                {
+                    int ItemIndex = SendMessage((HWND)lParam, (UINT)CB_GETCURSEL,
+                        (WPARAM)0, (LPARAM)0);
+                    mdl = ItemIndex + 1;
+
+                    InvalidateRect(pThis->m_hwnd, NULL, TRUE);
+
+                    /*TCHAR  ListItem[256];
+                    (TCHAR)SendMessage((HWND)lParam, (UINT)CB_GETLBTEXT,
+                        (WPARAM)ItemIndex, (LPARAM)ListItem);
+                    MessageBox(NULL, (LPCWSTR)ListItem, TEXT("Item Selected"), MB_OK);*/
+                }
+
+                // Events of clicking menu and buttons
                 switch (LOWORD(wParam))
                 {
                     case IDM_FILE_NEW:
+                        break;
                     case IDM_FILE_OPEN:
                         MessageBeep(MB_ICONINFORMATION);
                         break;
@@ -84,9 +113,11 @@ LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam
                         atexit(WaitForLibClose);
                         SendMessage(hWnd, WM_CLOSE, 0, 0);
                         break;
-                    case IDB_TEST:
-                        //MessageBoxW(NULL, L"Button clicked", L"TEST", MB_OK);
-                        pThis->OnTestClick();
+                    case IDB_START:
+                        pThis->OnStartClick();
+                        break;
+                    case IDB_STOP:
+                        pThis->OnStopClick();
                         break;
                     default:
                         break;
@@ -97,6 +128,7 @@ LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam
     }
     if (pThis)
     {
+        // Other events
         return pThis->HandleMessage(uMsg, wParam, lParam);
     }
     else
@@ -109,7 +141,7 @@ MainWindow::MainWindow() :m_hwnd(NULL)
 {
     this->COMactivated = false;
     materialPictures = InitPictures();
-    this->main2();
+    this->InitPaths();
 }
 
 BOOL MainWindow::Create(PCWSTR lpWindowName, DWORD dwStyle, DWORD dwExStyle, int x, int y,
@@ -142,7 +174,7 @@ BOOL MainWindow::Create(PCWSTR lpWindowName, DWORD dwStyle, DWORD dwExStyle, int
 
 HWND MainWindow::Window() const { return m_hwnd; }
 
-PCWSTR  MainWindow::ClassName() const
+PCWSTR MainWindow::ClassName() const
 {
     return L"DesktopApp";
 }
@@ -154,30 +186,36 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
     
     switch (uMsg)
     {
-        case WM_DESTROY:
+        case WM_DESTROY: // Event: Closing app
         {
             PostQuitMessage(0);
             GdiplusShutdown(this->gdiplusToken);
+            simulationRunning = false;
             return 0;
         }
-        case WM_PAINT:
+        case WM_PAINT: // Event: Repainting window of app
         {
             hdc = BeginPaint(this->m_hwnd, &ps);
             this->OnLoadPicture(hdc);
             EndPaint(this->m_hwnd, &ps);
             return 0;
         }
-        case WM_MOVE:
+        //case WM_MOVE:  // Event: Changing window position
+        //{
+        //    RECT rect;
+        //    wchar_t buf[10];
+        //    GetWindowRect(this->m_hwnd, &rect);
+
+        //    StringCbPrintfW(buf, sizeof(buf) / sizeof(wchar_t), L"%ld", rect.left);
+        //    SetWindowTextW(this->label1, buf);
+
+        //    StringCbPrintfW(buf, sizeof(buf) / sizeof(wchar_t), L"%ld", rect.top);
+        //    SetWindowTextW(this->label2, buf);
+        //    break;
+        //}
+        case WM_SIZE: // Event: Resizing window
         {
-            RECT rect;
-            wchar_t buf[10];
-            GetWindowRect(this->m_hwnd, &rect);
-
-            StringCbPrintfW(buf, sizeof(buf) / sizeof(wchar_t), L"%ld", rect.left);
-            SetWindowTextW(this->label1, buf);
-
-            StringCbPrintfW(buf, sizeof(buf) / sizeof(wchar_t), L"%ld", rect.top);
-            SetWindowTextW(this->label2, buf);
+            SendMessage(this->statusBar, WM_SIZE, 0, 0);
             break;
         }
         default:
@@ -185,21 +223,16 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
 }
 
-HWND MainWindow::GetHWND()
-{
-    return this->m_hwnd;
-}
-
 void MainWindow::CreateLabels(HWND hWnd)
 {
-    CreateWindowW(L"static", L"x: ", WS_CHILD | WS_VISIBLE, 10, 300, 125, 25, hWnd, (HMENU) 1, NULL, NULL);
-    this->label1 = CreateWindowW(L"static", L"150", WS_CHILD | WS_VISIBLE, 150, 300, 290, 25, hWnd, (HMENU)2, NULL, NULL);
+    CreateWindowW(L"static", L"Port: ", WS_CHILD | WS_VISIBLE, 10, 300, 125, 25, hWnd, (HMENU) 1, NULL, NULL);
+    this->labelPort = CreateWindowW(L"static", L"None", WS_CHILD | WS_VISIBLE, 150, 300, 290, 25, hWnd, (HMENU)2, NULL, NULL);
     
-    CreateWindowW(L"static", L"y: ", WS_CHILD | WS_VISIBLE, 10, 330, 125, 25, hWnd, (HMENU) 3, NULL, NULL);
-    this->label2 = CreateWindowW(L"static", L"150", WS_CHILD | WS_VISIBLE, 150, 330, 290, 25, hWnd, (HMENU)4, NULL, NULL);
+    CreateWindowW(L"static", L"Model: ", WS_CHILD | WS_VISIBLE, 10, 330, 125, 25, hWnd, (HMENU) 3, NULL, NULL);
+    this->labelModel = CreateWindowW(L"static", L"Not chosen", WS_CHILD | WS_VISIBLE, 150, 330, 290, 25, hWnd, (HMENU)4, NULL, NULL);
 
-    CreateWindowW(L"static", L"Speed: ", WS_CHILD | WS_VISIBLE, 10, 360, 125, 25, hWnd, (HMENU)5, NULL, NULL);
-    this->labelStat = CreateWindowW(L"static", L"0", WS_CHILD | WS_VISIBLE, 150, 360, 290, 25, hWnd, (HMENU)6, NULL, NULL);
+    CreateWindowW(L"static", L"Velocity: ", WS_CHILD | WS_VISIBLE, 10, 360, 125, 25, hWnd, (HMENU)5, NULL, NULL);
+    this->labelSpeed = CreateWindowW(L"static", L"0", WS_CHILD | WS_VISIBLE, 150, 360, 290, 25, hWnd, (HMENU)6, NULL, NULL);
 
     CreateWindowW(L"static", L"Mouse position x: ", WS_CHILD | WS_VISIBLE, 10, 390, 125, 25, hWnd, (HMENU)7, NULL, NULL);
     this->labelMouseX = CreateWindowW(L"static", L"0", WS_CHILD | WS_VISIBLE, 150, 390, 290, 25, hWnd, (HMENU)8, NULL, NULL);
@@ -220,9 +253,7 @@ void MainWindow::CreateMenus(HWND hWnd)
     AppendMenuW(hMenu, MFT_STRING, IDM_FILE_OPEN, L"&Open");
     AppendMenuW(hMenu, MFT_SEPARATOR, 0, NULL);
     AppendMenuW(hMenu, MFT_STRING, IDM_FILE_CLOSE, L"&Close");
-
     AppendMenuW(hMenuBar, MF_POPUP, (UINT_PTR)hMenu, L"&File");
-
     hMenu = CreateMenu();
     AppendMenuW(hMenuBar, MF_POPUP, (UINT_PTR)hMenu, L"&Port");
     this->hMenuBar = hMenuBar;
@@ -230,17 +261,61 @@ void MainWindow::CreateMenus(HWND hWnd)
     SetMenu(hWnd, this->hMenuBar);
 }
 
+void MainWindow::CreateCombobox(HWND hWnd)
+{
+    HWND hwndCombo = CreateWindowW(L"Combobox", NULL, WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST, 10, 455, 325, 50,
+        hWnd, NULL, NULL, NULL);
+     this->comboBox = hwndCombo;
+}
+
+void MainWindow::CreateStatusbar(HWND hWnd)
+{
+    HWND hwndSatusbar = CreateWindowEx(0, STATUSCLASSNAME, L"Ready", WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP, 0, 0, 0, 0,
+        hWnd, NULL, NULL, NULL);
+    //int iStatusWidths[] = { 80, 200, -1 };
+    //SendMessage(hwndSatusbar, SB_SETPARTS, 3, (LPARAM)iStatusWidths);
+    this->statusBar = hwndSatusbar;
+}
+
 void MainWindow::CreateButtons(HWND hWnd)
 {
-    HWND hwndButton = CreateWindowW(L"BUTTON", L"Test", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 340, 455, 100, 25,
-        hWnd, (HMENU)IDB_TEST, NULL, NULL);
+    HWND hwndButtonStart = CreateWindowW(L"BUTTON", L"Start", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 340, 455, 100, 25,
+        hWnd, (HMENU)IDB_START, NULL, NULL);
+    HWND hwndButtonStop = CreateWindowW(L"BUTTON", L"Stop", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON, 340, 485, 100, 25,
+        hWnd, (HMENU)IDB_STOP, NULL, NULL);
 };
 
 void MainWindow::SetLabelValue(HWND label, LONG value)
 {
     wchar_t buffer[256];
-    StringCbPrintfW(buffer, sizeof(buffer) / sizeof(wchar_t), L"%ld", value);
+    StringCbPrintfW(buffer, sizeof(buffer) / sizeof(wchar_t), L"%d", value);
     SetWindowTextW(label, buffer);
+}
+
+void MainWindow::SetLabelValue(HWND label, double value)
+{
+    wchar_t buffer[256];
+    StringCbPrintfW(buffer, sizeof(buffer) / sizeof(wchar_t), L"%f", value);
+    SetWindowTextW(label, buffer);
+}
+
+void MainWindow::SetLabelValue(HWND label, wchar_t* value)
+{
+    wchar_t buffer[256];
+    StringCbPrintfW(buffer, sizeof(buffer) / sizeof(wchar_t), L"%s", value);
+    SetWindowTextW(label, buffer);
+}
+
+void MainWindow::SetComboValue(HWND hWnd, std::wstring value)
+{
+    wchar_t* pValue = const_cast<wchar_t*>(value.c_str());
+    SendMessageW(hWnd, CB_ADDSTRING, 0, (LPARAM)pValue);
+}
+
+void MainWindow::SetStatusValue(std::wstring value, int part)
+{
+    wchar_t* pValue = const_cast<wchar_t*>(value.c_str());
+    SendMessage(this->statusBar, SB_SETTEXT, part, (LPARAM)pValue);
 }
 
 void MainWindow::CheckPortMenuItems()
@@ -322,9 +397,9 @@ std::vector<std::wstring> MainWindow::GetCOMPortNames(HWND hWnd)
 
 int MainWindow::ConnectPort(int port)
 {
-    if (this->hComm != NULL)
+    if (MainWindow::hComm != NULL)
     {
-        CloseHandle(this->hComm);
+        CloseHandle(MainWindow::hComm);
     }
     DCB dcbserialparams = { 0 };
     COMMTIMEOUTS timeouts = { 0 };   // initializing timeouts structure
@@ -333,24 +408,24 @@ int MainWindow::ConnectPort(int port)
 
     swprintf(sPort, 100, L"\\\\.\\COM%u", this->serialPorts.find(port)->second);
 
-    this->hComm = CreateFile(sPort,    // port friendly name
-    	GENERIC_READ | GENERIC_WRITE,  // read/write access
-    	0,                             // no sharing, ports cant be shared
-    	NULL,                          // no security
-    	OPEN_EXISTING,                 // open existing port only
-    	0,                             // non overlapped i/o
+    MainWindow::hComm = CreateFile(sPort,    // port friendly name
+    	GENERIC_READ | GENERIC_WRITE,        // read/write access
+    	0,                                   // no sharing, ports cant be shared
+    	NULL,                                // no security
+    	OPEN_EXISTING,                       // open existing port only
+    	0,                                   // non overlapped i/o
     	NULL);
-    if (this->hComm == INVALID_HANDLE_VALUE)
+    if (MainWindow::hComm == INVALID_HANDLE_VALUE)
     {
     	MessageBoxW(NULL, L"Port can't be opened", L"error", MB_OK);
     	return 0;
     }
     dcbserialparams.DCBlength= sizeof(dcbserialparams);
-    dcbserialparams.BaudRate = CBR_9600;      //baudrate = 9600
+    dcbserialparams.BaudRate = CBR_115200;    //baudrate = 115200
     dcbserialparams.ByteSize = 8;             //bytesize = 8
     dcbserialparams.StopBits = ONESTOPBIT;    //stopbits = 1
-    dcbserialparams.Parity = NOPARITY;      //parity = none
-    bool status = SetCommState(this->hComm, &dcbserialparams);
+    dcbserialparams.Parity = NOPARITY;        //parity = none
+    bool status = SetCommState(MainWindow::hComm, &dcbserialparams);
     if (status == false)
     {
     	MessageBoxW(NULL, L"Error to setting dcb structure", L"error", MB_OK);
@@ -362,7 +437,7 @@ int MainWindow::ConnectPort(int port)
     timeouts.ReadTotalTimeoutMultiplier = 10;
     timeouts.WriteTotalTimeoutConstant = 50;
     timeouts.WriteTotalTimeoutMultiplier = 10;
-    if (SetCommTimeouts(this->hComm, &timeouts) == false)
+    if (SetCommTimeouts(MainWindow::hComm, &timeouts) == false)
     {
     	MessageBoxW(NULL, L"Error to setting time outs", L"error", MB_OK);
     	return 0;
@@ -378,12 +453,10 @@ int MainWindow::ConnectPort(int port)
 void MainWindow::SendMessageToCOM(char message[])
 {
     DWORD BytesWritten = 0;
-    // TODO: define message body
-    //char message[] = "#01";
-    BOOL Status = WriteFile(this->hComm,   // Handle to the Serialport
-        message,                           // Data to be written to the port
-        sizeof(message),                   // No of bytes to write into the port
-        &BytesWritten,                     // No of bytes written to the port
+    BOOL Status = WriteFile(MainWindow::hComm,   // Handle to the Serialport
+        message,                                 // Data to be written to the port
+        sizeof(message),                         // No of bytes to write into the port
+        &BytesWritten,                           // No of bytes written to the port
         NULL);
     if (Status == FALSE)
     {
@@ -396,18 +469,53 @@ void MainWindow::OnLoadPicture(HDC hdc)
 {
     Graphics graphics(hdc);
     
-    wchar_t* pName = const_cast<wchar_t*>(this->materialPictures[Material::WOOD].c_str());
+    wchar_t pDefault[] = L"default.jpg";
+    wchar_t* pImage;
+
+    wchar_t* pName;
+    if (mdl == -1)
+    {
+        pName = pDefault;
+    }
+    else
+    {
+        pImage = const_cast<wchar_t*>(this->materialPictures[mdl].c_str());
+        pName = pImage;
+    }
+    //wchar_t* pName = const_cast<wchar_t*>(this->materialPictures[Material::WOOD].c_str());
 
     wchar_t fullFilePath[MAX_PATH];
     wchar_t* pFullFilePath;
     pFullFilePath = fullFilePath;
-        
+    
     Image image(PathCombineW(pFullFilePath, this->imageDirectory.c_str(), pName));
     graphics.DrawImage(&image, 10, 10, 430, 270);
 };
 
-void MainWindow::OnTestClick()
+void MainWindow::InitWindow()
 {
+    // Load types of models
+    std::map<int, std::wstring>::iterator it = this->materialPictures.begin();
+    while (it != this->materialPictures.end())
+    {
+        // Accessing KEY from element pointed by it.
+        std::wstring value = it->second;
+        // Accessing VALUE from element pointed by it.
+        int key = it->first;
+        this->SetComboValue(this->comboBox, value.substr(0, value.size()-4).c_str()); //Remove dot with file extension
+        it++;
+    }
+
+    size_t hight = 50 * (this->materialPictures.size() + 1);
+    SetWindowPos(this->comboBox, NULL, 10, 455, 325, hight, NULL);
+    SendMessage(this->comboBox, CB_SETCURSEL, 0, 0);
+    MainWindow::comThreadInitialized = false;
+    MainWindow::comThreadRunning = false;
+}
+
+void MainWindow::OnStartClick()
+{
+    /*
     libCSV lib = libCSV("test_data.csv");
     std::vector<double> values = lib.readVals();
     unsigned long count = values.size();
@@ -416,10 +524,53 @@ void MainWindow::OnTestClick()
     swprintf(message, 100, L"The array has %u  items", count);
 
     MessageBoxW(NULL, message, L"error", MB_OK);
+    */
+    LoadModel(this->hapticMdlPath, mdl);
+
+    MainWindow::comThreadRunning = true;
+    MainWindow::comThread = new std::thread(MainWindow::ComThreadRun);
+    //MainWindow::comThread = comThread;
+    MainWindow::comThread->detach();
+
+    // TODO: start two threads with model results
+
+    simulationRunning = true;
+    simulationFinished = false;
+
+    std::thread hapticsThread(updateHaptics);
+    hapticsThread.detach();
+    std::thread vibroGenThread(updateVibrationPattern);
+    vibroGenThread.detach();
+    atexit(WaitForLibClose);
 };
 
+void MainWindow::OnStopClick()
+{
+    /*MainWindow::comThreadRunning = false;
+    simulationRunning = false;
+    simulationFinished = true;*/
+    std::chrono::system_clock::time_point currentTime = std::chrono::system_clock::now();
+    std::time_t time = std::chrono::system_clock::to_time_t(currentTime);
+    //std::string timeString = std::format("%F %T", std::chrono::system_clock::now());
+    char timeString[100];
+    std::strftime(timeString, 100, "%F_%H-%M-%S", localtime(&time));
 
-void MainWindow::main2()
+    //char* timeString = ctime(&time);
+
+    char* fileName = new char[this->outputDirectory.length() + 1];
+    strcpy(fileName,  this->outputDirectory.c_str());
+
+    strcat(fileName, timeString);
+    strcat(fileName, ".txt");
+
+    libCSV lib = libCSV("test_data.csv");
+    std::vector<double> values = lib.readVals();
+
+    libCSV outlib = libCSV(fileName);
+    outlib.WriteVals(values);
+};
+
+void MainWindow::InitPaths()
 {
     wchar_t directory[MAX_PATH];
     GetCurrentDirectoryW(MAX_PATH, directory);
@@ -441,12 +592,26 @@ void MainWindow::main2()
     resourceRoot = st;
 
     this->hapticMdlPath = RESOURCE_PATH("\\resources\\haptic_models\\");
-    LoadModel(this->hapticMdlPath, 84);
+    this->outputDirectory = OUTPUT_PATH("\\output\\");
+}
 
-    // TODO: start two threads with model results
-    std::thread hapticsThread(updateHaptics);
-    hapticsThread.detach();
-    std::thread vibroGenThread(updateVibrationPattern);
-    vibroGenThread.detach();
-    atexit(WaitForLibClose);
+void MainWindow::ComThreadRun(void)
+{
+    using namespace std::chrono_literals;
+    char message[10];
+    while (MainWindow::comThreadRunning)
+    {
+        std::this_thread::sleep_for(2s);
+        sprintf(message, "$1, %u#", 25);
+        MainWindow::SendMessageToCOM(message);
+        std::this_thread::sleep_for(2s);
+        
+        sprintf(message, "$1, %u#", 50);
+        MainWindow::SendMessageToCOM(message);
+        
+        sprintf(message, "$1, %u#", 100);
+        MainWindow::SendMessageToCOM(message);
+    }
+    std::this_thread::sleep_for(2s);
+    sprintf(message, "$1, %u#", 0);
 }

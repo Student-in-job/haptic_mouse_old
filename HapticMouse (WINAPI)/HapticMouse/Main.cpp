@@ -15,7 +15,7 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
 	rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
 	rid[0].dwFlags = RIDEV_CAPTUREMOUSE;
-	rid[0].hwndTarget = window.GetHWND();
+	rid[0].hwndTarget = window.Window();
 	RegisterRawInputDevices(rid, 1, sizeof(rid[0]));
 
 	if (!window.Create(L"Haptic Mouse App", WS_OVERLAPPEDWINDOW))

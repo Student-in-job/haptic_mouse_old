@@ -9,18 +9,31 @@
 #define RADIAN_ANGLE			57.2958	// Radian to angle conversion
 #define MOUSE_DIAMETER			2.48	// mouse wheel diameter in cm
 
-void WaitForLibClose(void);
+#define LIB_COUNT				84		// number of textures in lib
+#define MATERIALS				20000	// additional value
 
-// TODO: place all materials
-enum Material
-{
-	PAPER = 20001,
-	WOOD  = 20002
-};
+static double forceNormal = 2;
+static int faceInContact;
+
+static double magVel = 100;
+static int mdl = -1;
+
+// a flag that indicates if the haptic simulation is currently running
+static bool simulationRunning = false;
+
+// a flag that indicates if the haptic simulation has terminated
+static bool simulationFinished = true;
+
+//enum Material
+//{
+//	PAPER = 20001,
+//	WOOD  = 20002,
+//};
 
 std::map<int, std::wstring> InitPictures();
 double LinearVelosity(int rotations, double time);
 
+void WaitForLibClose(void);
 void LoadModel(std::string path, int mdl);
 void updateHaptics(void);
 void updateVibrationPattern(void);

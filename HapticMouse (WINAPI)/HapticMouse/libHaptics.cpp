@@ -26,6 +26,7 @@ std::vector <float> excitationHist[200];
 
 boost::mt19937 rng;
 
+/* Input variables for rendering lib
 static double forceNormal = 2;
 static int faceInContact;
 
@@ -37,6 +38,7 @@ bool simulationRunning = false;
 
 // a flag that indicates if the haptic simulation has terminated
 bool simulationFinished = true;
+*/
 
 //void updateHaptics(void);
 //void updateVibrationPattern(void);
@@ -48,10 +50,18 @@ std::map<int, std::wstring> InitPictures()
 {
 	std::map<int, std::wstring> MaterialPictures;
 	
-	std::wstring material_name(L"paper.jpg");
-	MaterialPictures[Material::PAPER] = material_name;
-	material_name = L"wood.jpg";
-	MaterialPictures[Material::WOOD] = material_name;
+	for (int index = 1; index <= LIB_COUNT; index++)
+	{
+		wchar_t buffer[100];
+		swprintf(buffer, sizeof(buffer) / sizeof(wchar_t), L"material_%d.jpg", index);
+		wstring fileName(buffer);
+		MaterialPictures[index] = fileName;
+	}
+
+	//std::wstring material_name(L"paper.jpg");
+	//MaterialPictures[Material::PAPER] = material_name;
+	//material_name = L"wood.jpg";
+	//MaterialPictures[Material::WOOD] = material_name;
 	return MaterialPictures;
 };
 
@@ -75,8 +85,8 @@ void WaitForLibClose(void)
 	simulationRunning = false;
 
 	// wait for graphics and haptics loops to terminate
-	//while (!simulationFinished) { std::this_thread::sleep_for(100ms); }
-	while (true) { std::this_thread::sleep_for(100ms); }
+	while (!simulationFinished) { std::this_thread::sleep_for(100ms); }
+	//while (true) { std::this_thread::sleep_for(100ms); }
 
 }
 
@@ -203,8 +213,6 @@ void updateVibrationPattern(void) {
 		}
 
 		if (true) {
-
-
 
 			if (std::abs(magVel) > 5) {
 				ARFromLsf(magVel, forceNormal / 5.0, mdl); // Y and X are swaped due to difference modeling / redering coord sys.

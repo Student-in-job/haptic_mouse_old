@@ -44,7 +44,7 @@ LRESULT CALLBACK MainWindow::WindowProcedure(HWND hWnd, UINT uMsg, WPARAM wParam
                 pThis->CreateButtons(pThis->m_hwnd);
                 pThis->CreateStatusbar(pThis->m_hwnd);
                 pThis->InitWindow();
-                //pThis->InitTimer(pThis->m_hwnd);
+                pThis->InitTimer(pThis->m_hwnd);
                 break;
             }
             case WM_MOUSEWHEEL: //Aproximation of speed of scrolling the mouse wheel
@@ -193,6 +193,7 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         case WM_DESTROY: // Event: Closing app
         {
+            WaitForLibClose();
             PostQuitMessage(0);
             GdiplusShutdown(this->gdiplusToken);
             simulationRunning = false;
@@ -534,18 +535,17 @@ void MainWindow::OnStartClick()
     MainWindow::comThreadRunning = true;
     MainWindow::comThread = new std::thread(MainWindow::ComThreadRun);
     //MainWindow::comThread = new std::thread(MainWindow::ComThreadToFile);
-    MainWindow::comThread->detach();
+    //MainWindow::comThread->detach();
 
     // TODO: start two threads with model results
 
     simulationRunning = true;
     simulationFinished = false;
 
-    std::thread hapticsThread(updateHaptics);
-    hapticsThread.detach();
+    //std::thread hapticsThread(updateHaptics);
+    //hapticsThread.detach();
     std::thread vibroGenThread(updateVibrationPattern);
     vibroGenThread.detach();
-    atexit(WaitForLibClose);
 };
 
 void MainWindow::OnStopClick()
@@ -593,20 +593,13 @@ void MainWindow::ComThreadRun(void)
 {
     using namespace std::chrono_literals;
     char message[10];
-    /*while (MainWindow::comThreadRunning)
+    /*
+    while (MainWindow::comThreadRunning)
     {
-        sprintf(message, "$1,%u#", 25);
-        MainWindow::SendMessageToCOM(message);
-        
         std::this_thread::sleep_for(2s);
-        sprintf(message, "$1,%u#", 50);
-        MainWindow::SendMessageToCOM(message);
-        
-        std::this_thread::sleep_for(2s);
-        sprintf(message, "$1,%u#", 100);
+        sprintf(message, "$1,%u#", 95);
         MainWindow::SendMessageToCOM(message);
     }*/
-
     while (MainWindow::comThreadRunning)
     {
         std::this_thread::sleep_for(100ms);
@@ -615,6 +608,7 @@ void MainWindow::ComThreadRun(void)
     }
     std::this_thread::sleep_for(2s);
     sprintf(message, "$1,%u#", 0);
+    MainWindow::SendMessageToCOM(message);
 }
 
 void MainWindow::ComThreadToFile(void)

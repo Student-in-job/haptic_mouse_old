@@ -78,7 +78,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>E:\repos\haptic_mouse\HapticMouse %28WINAPI%29\HapticMouse\ext;$(IncludePath)</IncludePath>
+    <IncludePath>C:\repos\haptic_mouse\HapticMouse %28WINAPI%29\HapticMouse\ext;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>

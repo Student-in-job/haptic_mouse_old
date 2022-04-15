@@ -37,6 +37,8 @@ namespace HapticMouse
         private readonly BackgroundWorker worker = new BackgroundWorker();
         private SerialPort comPort = new SerialPort();
         private bool stop = false;
+        private bool blocked = false;
+        private string extention = ".csv";
 
         public MainWindow()
         {
@@ -45,37 +47,38 @@ namespace HapticMouse
             timer.Tick += Timer_tick;
             timer.Interval = new TimeSpan(0, 0, 5);
             timer.Start();
-            string directory = System.AppDomain.CurrentDomain.BaseDirectory;
-            string fullFileName = System.IO.Path.Combine(directory, "AppData", this.filename);
-            System.IO.FileInfo fi = new System.IO.FileInfo(fullFileName);
-            if (fi.Exists)
-            {
-                try
-                {
-                    List<int> readVals = new List<int>();
-                    string [] lines = System.IO.File.ReadAllLines(fi.FullName).ToArray();
-                    foreach (string line in lines)
-                    {
-                        string [] sepVals = line.Split(",");
-                        foreach (string val in sepVals)
-                        {
-                            readVals.Add((int)double.Parse(val));
-                        }
-                    }
-                    this.vals = readVals.ToArray();
-                    this.txtOutput.Text += string.Format("Files was read from: {0} \n", fi.FullName);
-                }
-                catch (System.IO.IOException exp)
-                {
-                    MessageBox.Show(exp.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            else {
-                MessageBox.Show("File not exist: " + fi.FullName);
-            }
+            //string directory = System.AppDomain.CurrentDomain.BaseDirectory;
+            //string fullFileName = System.IO.Path.Combine(directory, "AppData", this.filename);
+            //System.IO.FileInfo fi = new System.IO.FileInfo(fullFileName);
+            //if (fi.Exists)
+            //{
+            //    try
+            //    {
+            //        List<int> readVals = new List<int>();
+            //        string [] lines = System.IO.File.ReadAllLines(fi.FullName).ToArray();
+            //        foreach (string line in lines)
+            //        {
+            //            string [] sepVals = line.Split(",");
+            //            foreach (string val in sepVals)
+            //            {
+            //                readVals.Add((int)double.Parse(val));
+            //            }
+            //        }
+            //        this.vals = readVals.ToArray();
+            //        this.txtOutput.Text += string.Format("Files was read from: {0} \n", fi.FullName);
+            //    }
+            //    catch (System.IO.IOException exp)
+            //    {
+            //        MessageBox.Show(exp.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            //    }
+            //}
+            //else {
+            //    MessageBox.Show("File not exist: " + fi.FullName);
+            //}
             worker.DoWork += worker_DoWork;
             worker.RunWorkerCompleted += worker_RunWorkerCompleted;
             worker.WorkerSupportsCancellation = true;
+            this.LoadList();
         }
 
         public static void Port_Choose(object Sender, System.EventArgs e) {
@@ -161,8 +164,10 @@ namespace HapticMouse
                 this.txtOutput.Text += string.Format("Com port: {0} is connected\n", comPortName);
                 stop = false;
                 worker.RunWorkerAsync("Press Enter in the next 5 seconds to Cancel operation:");
+                blocked = false;
                 this.btnSend.IsEnabled = false;
                 this.btnStop.IsEnabled = true;
+                this.btnBlock.IsEnabled = true;
             }
         }
 
@@ -202,6 +207,7 @@ namespace HapticMouse
                     send_frequency(freg.ToString());
                 }
             }
+            send_frequency("0");
         }
 
         private void worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -216,6 +222,7 @@ namespace HapticMouse
             stop = true;
             this.btnSend.IsEnabled = true;
             this.btnStop.IsEnabled = false;
+            this.btnBlock.IsEnabled = false;
             //comPort.Close();
         }
 
@@ -225,6 +232,79 @@ namespace HapticMouse
             {
                 txtOutput.Text += message;
             });
+        }
+
+        private void btnBlock_Click(object sender, RoutedEventArgs e)
+        {
+            if (!this.blocked)
+            {
+                stop = true;
+                System.Threading.Thread.Sleep(500);
+                this.btnSend.IsEnabled = false;
+                this.txtBlockBtn.Text = "Unblock";
+                if (!comPort.IsOpen)
+                {
+                    comPort.Open();
+                }
+                this.send_frequency("100");
+                comPort.Close();
+            }
+            else
+            {
+                stop = false;
+                System.Threading.Thread.Sleep(500);
+                comPort.Open();
+                worker.RunWorkerAsync("Press Enter in the next 5 seconds to Cancel operation:");
+                this.btnSend.IsEnabled = true;
+                this.txtBlockBtn.Text = "Block";
+            }
+            blocked = !blocked;
+        }
+        private void LoadList()
+        {
+            this.cmbTextures.Items.Clear();
+            this.cmbTextures.Items.Add("data");
+            this.cmbTextures.Items.Add("data_hard_cover");
+            this.cmbTextures.SelectedIndex = 0;
+        }
+
+        private void LoadTexture(string filename)
+        {
+            string directory = System.AppDomain.CurrentDomain.BaseDirectory;
+            string fullFileName = System.IO.Path.Combine(directory, "AppData", filename);
+            System.IO.FileInfo fi = new System.IO.FileInfo(fullFileName);
+            if (fi.Exists)
+            {
+                try
+                {
+                    List<int> readVals = new List<int>();
+                    string[] lines = System.IO.File.ReadAllLines(fi.FullName).ToArray();
+                    foreach (string line in lines)
+                    {
+                        string[] sepVals = line.Split(",");
+                        foreach (string val in sepVals)
+                        {
+                            readVals.Add((int)double.Parse(val));
+                        }
+                    }
+                    this.vals = readVals.ToArray();
+                    this.txtOutput.Text += string.Format("Files was read from: {0} \n", fi.FullName);
+                }
+                catch (System.IO.IOException exp)
+                {
+                    MessageBox.Show(exp.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("File not exist: " + fi.FullName);
+            }
+        }
+
+        private void cmbTextures_Change(object sender, SelectionChangedEventArgs e)
+        {
+            //MessageBox.Show(this.cmbTextures.SelectedItem.ToString());
+            this.LoadTexture(this.cmbTextures.SelectedItem.ToString() + extention);
         }
     }
 }

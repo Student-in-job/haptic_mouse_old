@@ -37,6 +37,12 @@
             <Button x:Name="btnStop" Height="30" VerticalAlignment="Top" IsEnabled="False" Click="btnStop_Click">
                 <TextBlock Text="Stop"/>
             </Button>
+            <Separator Height="15"/>
+            <Button x:Name="btnBlock" Height="30" VerticalAlignment="Top" Click="btnBlock_Click" IsEnabled="false" Background="Aquamarine">
+                <TextBlock x:Name="txtBlockBtn" Text="Block"/>
+            </Button>
+            <Separator Height="15"/>
+            <ComboBox x:Name="cmbTextures" SelectionChanged="cmbTextures_Change"></ComboBox>
         </StackPanel>
         <TextBox Grid.Row="1"
                  Grid.Column="0"

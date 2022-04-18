@@ -46,6 +46,7 @@ HWND      lModel;
 HWND      lVelosity;
 HWND      hCombo;
 HWND      status;
+HWND      startButton;
 int       Controls = 7000;
 
 //----------------------- GDI+ Variables ----------------------
@@ -214,10 +215,10 @@ void InitControls(HWND hwnd)
     lVelosity = CreateLabel(hwnd, VelositySize);
 
     SWindow startButtonSize = { startButtonX, startButtonY, startButtonWidth, startButtonHeight };
-    HWND    hwndButtonStart = CreateButton(hwnd, startButtonSize, L"Start", IDB_START);
+    startButton = CreateButton(hwnd, startButtonSize, L"Start", IDB_START);
 
     SWindow stopButtonSize = { stopButtonX, stopButtonY, stopButtonWidth, stopButtonHeight };
-    HWND    hwndButtonEnd = CreateButton(hwnd, stopButtonSize, L"Stop", IDB_STOP);
+    HWND stopButton = CreateButton(hwnd, stopButtonSize, L"Stop", IDB_STOP);
 
     hCombo = CreateWindowW(L"Combobox", NULL, WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | CBS_AUTOHSCROLL,
         comboModelX, comboModelY, comboModelWidth, comboModelHeight, hwnd, (HMENU)Controls++, Instance, NULL);
@@ -256,11 +257,15 @@ LRESULT CALLBACK Event_Callback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                         DisplayError(L"Model has not being chosen!\nPlease choose model.");
                     else
                         StartLoop(model + 1);
+                    EnableWindow(startButton, false);
+                    EnableWindow(hCombo, false);
                     break;
                 }
                 case IDB_STOP:
                 {
                     EndThread();
+                    EnableWindow(startButton, true);
+                    EnableWindow(hCombo, true);
                     break;
                 }
             }

@@ -4,12 +4,16 @@
 #define DAQmxErrChk(functionCall) if( DAQmxFailed(error=(functionCall)) ) goto Error; else
 
 // Global variables for NI DAQ
-TaskHandle  taskHandle;
+static TaskHandle taskHandle;
 const char* channelVoltage = "Dev3/ao0";
 
 extern double vibrationsData[1000];
 extern bool running;
 extern bool started;
+
+// Extern Functions declaration
+extern void SetProgress(const wchar_t* value);
+extern void SetError(const wchar_t* value);
 
 int32 CVICALLBACK DataAquisitionLoop(TaskHandle taskHandle, int32 everyNsamplesEventType, uInt32 nSamples, void* callbackData)
 {
@@ -52,18 +56,19 @@ int32 CVICALLBACK DynamicDataGenerationLoop()
     int			error = 0;
     char		errBuff[2048] = { '\0' };
     int         i = 1;
+    TaskHandle	hTaskHandle = 0;
 
     /*********************************************/
     // DAQmx Configure Code
     /*********************************************/
-    DAQmxErrChk(DAQmxCreateTask("Loop", &taskHandle));
-    DAQmxErrChk(DAQmxCreateAOVoltageChan(taskHandle, channelVoltage, "", -10.0, 10.0, DAQmx_Val_Volts, ""));
+    DAQmxErrChk(DAQmxCreateTask("Loop", &hTaskHandle));
+    DAQmxErrChk(DAQmxCreateAOVoltageChan(hTaskHandle, channelVoltage, "", -10.0, 10.0, DAQmx_Val_Volts, ""));
     /*********************************************/
     // DAQmx Start Code
     /*********************************************/
-    DAQmxErrChk(DAQmxStartTask(taskHandle));
+    DAQmxErrChk(DAQmxStartTask(hTaskHandle));
 
-    SetProgress(L"Writing data to DAQ channel");
+    //SetProgress(L"Writing data to DAQ channel");
     running = true;
     while (started)
     {
@@ -71,7 +76,7 @@ int32 CVICALLBACK DynamicDataGenerationLoop()
         /*********************************************/
         // DAQmx Write Code
         /*********************************************/
-        DAQmxErrChk(DAQmxWriteAnalogScalarF64(taskHandle, 1, -1, vibrationsData[i++], NULL));
+        DAQmxErrChk(DAQmxWriteAnalogScalarF64(hTaskHandle, 1, -1, vibrationsData[i++], NULL));
     }
 
     Error:
@@ -81,12 +86,12 @@ int32 CVICALLBACK DynamicDataGenerationLoop()
         SetError(err);
         running = false;
     }
-    if (taskHandle != 0) {
+    if (hTaskHandle != 0) {
         /*********************************************/
         // DAQmx Stop Code
         /*********************************************/
-        DAQmxStopTask(taskHandle);
-        DAQmxClearTask(taskHandle);
+        DAQmxStopTask(hTaskHandle);
+        DAQmxClearTask(hTaskHandle);
     }    
 
     SetProgress(L"Finished writing data");
@@ -102,14 +107,14 @@ int32 CVICALLBACK DAQLoop()
     /*********************************************/
     // DAQmx Configure Code
     /*********************************************/
-    DAQmxErrChk(DAQmxCreateTask("", &taskHandle));
+    DAQmxErrChk(DAQmxCreateTask("out", &taskHandle));
     DAQmxErrChk(DAQmxCreateAOVoltageChan(taskHandle, channelVoltage, "", -10.0, 10.0, DAQmx_Val_Volts, ""));
     /*********************************************/
     // DAQmx Start Code
     /*********************************************/
     DAQmxErrChk(DAQmxStartTask(taskHandle));
 
-    SetProgress(L"Writing data to DAQ channel");
+    //SetProgress(L"Writing data to DAQ channel");
     running = true;
     while (started) {}
     

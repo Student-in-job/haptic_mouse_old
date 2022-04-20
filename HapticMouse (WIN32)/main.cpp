@@ -46,6 +46,7 @@ HWND      lModel;
 HWND      lVelosity;
 HWND      hCombo;
 HWND      status;
+HWND      startButton;
 int       Controls = 7000;
 
 //----------------------- GDI+ Variables ----------------------
@@ -64,8 +65,8 @@ void SetError(const wchar_t* value);
 // Forward functions declaration
 LRESULT CALLBACK Event_Callback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void InitPaths();
+int StartThread(int mdl);
 int EndThread();
-int StartLoop(int mdl);
 void WaitTillAllThreadsEnd();
 double LinearVelosity(int rotations, double time);
 
@@ -214,7 +215,7 @@ void InitControls(HWND hwnd)
     lVelosity = CreateLabel(hwnd, VelositySize);
 
     SWindow startButtonSize = { startButtonX, startButtonY, startButtonWidth, startButtonHeight };
-    HWND    hwndButtonStart = CreateButton(hwnd, startButtonSize, L"Start", IDB_START);
+    startButton = CreateButton(hwnd, startButtonSize, L"Start", IDB_START);
 
     SWindow stopButtonSize = { stopButtonX, stopButtonY, stopButtonWidth, stopButtonHeight };
     HWND    hwndButtonEnd = CreateButton(hwnd, stopButtonSize, L"Stop", IDB_STOP);
@@ -255,11 +256,15 @@ LRESULT CALLBACK Event_Callback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                     if (model == CB_ERR)
                         DisplayError(L"Model has not being chosen!\nPlease choose model.");
                     else
-                        StartLoop(model + 1);
+                        StartThread(model + 1);
+                    EnableWindow(startButton, false);
+                    EnableWindow(hCombo, false);
                     break;
                 }
                 case IDB_STOP:
                 {
+                    EnableWindow(startButton, true);
+                    EnableWindow(hCombo, true);
                     EndThread();
                     break;
                 }
@@ -339,7 +344,7 @@ int EndThread()
     return 1;
 }
 
-int StartLoop(int mdl)
+int StartThread(int mdl)
 {
     try
     {

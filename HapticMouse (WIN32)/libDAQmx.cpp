@@ -47,47 +47,6 @@ int32 CVICALLBACK DataAquisitionLoop(TaskHandle taskHandle, int32 everyNsamplesE
     return 0;
 }
 
-int32 CVICALLBACK DataGenerationLoop()
-{
-    char    errBuff[2048] = { '\0' };
-    int32   error = 0;
-    float64 vibroVal = 5.62f;
-
-    /*********************************************/
-    // DAQmx Configure Code
-    /*********************************************/
-    DAQmxErrChk(DAQmxCreateTask("output", &taskHandle));
-    DAQmxErrChk(DAQmxCreateAOVoltageChan(taskHandle, channelVoltage, "", -10.0, 10.0, DAQmx_Val_Volts, NULL));
-    DAQmxErrChk(DAQmxCfgSampClkTiming(taskHandle, "", 1000.0, DAQmx_Val_Rising, DAQmx_Val_ContSamps, 1000));
-    //DAQmxErrChk(DAQmxSetAnlgEdgeStartTrigHyst(taskHandle, 1.0));
-
-    DAQmxErrChk(DAQmxWriteAnalogF64(taskHandle, 1000, 0, 10.0, DAQmx_Val_GroupByChannel, vibrationsData, NULL, NULL));
-    DAQmxErrChk(DAQmxStartTask(taskHandle));
-    
-    SetProgress(L"Writing data to DAQ channel");
-    running = true;
-    while (started) {}
-
-    Error:
-    if (DAQmxFailed(error))
-    {
-        DAQmxGetExtendedErrorInfo(errBuff, 2048);
-        wchar_t* err = ToWChar(errBuff);
-        SetError(err);
-    }
-    if (taskHandle != 0) {
-        /*********************************************/
-        // DAQmx Stop Code
-        /*********************************************/
-        DAQmxStopTask(taskHandle);
-        DAQmxClearTask(taskHandle);
-    }
-
-    SetProgress(L"Finished writing data");
-    running = false;
-    return 0;
-}
-
 int32 CVICALLBACK DynamicDataGenerationLoop()
 {
     int			error = 0;

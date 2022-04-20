@@ -4,8 +4,8 @@
 #define DAQmxErrChk(functionCall) if( DAQmxFailed(error=(functionCall)) ) goto Error; else
 
 // Global variables for NI DAQ
-static TaskHandle  taskHandle = 0;
-const char*        channelVoltage = "Dev3/ao0";
+extern TaskHandle  taskHandle;
+const char* channelVoltage = "Dev3/ao0";
 
 extern double vibrationsData[1000];
 extern bool running;
@@ -91,7 +91,6 @@ int32 CVICALLBACK DataGenerationLoop()
 int32 CVICALLBACK DynamicDataGenerationLoop()
 {
     int			error = 0;
-    TaskHandle	taskHandle = 0;
     char		errBuff[2048] = { '\0' };
     int         i = 1;
 
@@ -144,7 +143,7 @@ int32 CVICALLBACK DAQLoop()
     /*********************************************/
     // DAQmx Configure Code
     /*********************************************/
-    DAQmxErrChk(DAQmxCreateTask("out", &taskHandle));
+    DAQmxErrChk(DAQmxCreateTask("", &taskHandle));
     DAQmxErrChk(DAQmxCreateAOVoltageChan(taskHandle, channelVoltage, "", -10.0, 10.0, DAQmx_Val_Volts, ""));
     /*********************************************/
     // DAQmx Start Code

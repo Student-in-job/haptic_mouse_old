@@ -60,6 +60,7 @@ string         imageFilePath = "";       // Path to the image that should be loa
 // Functions callback which receives messages from DAQ library
 void SetProgress(const wchar_t* value);
 void SetError(const wchar_t* value);
+void sendOut(double value);
 
 // Forward functions declaration
 LRESULT CALLBACK Event_Callback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -376,7 +377,13 @@ void SetProgress(const wchar_t* value)
 {
     SetStatusValue(status, value, 0);
 }
+
 void SetError(const wchar_t* value)
 {
     DisplayError(value);
+}
+
+void sendOut(double value)
+{
+    
 }

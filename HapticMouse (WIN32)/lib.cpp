@@ -41,6 +41,9 @@ int		mdl = 0;
 extern bool   modelsLoaded;
 extern bool   started;
 extern bool   running;
+int			  gainVariable = 8.6;
+
+extern void sendOut(double value);
 
 int startLib(char* directory, int model)
 {
@@ -240,7 +243,8 @@ void updateVibrationPattern(void){
 
 void vibroOut(double vibroVal, int mdl)
 {
-	vibroVal *= (1.6 * gainConst[mdl]);
+	//vibroVal *= (1.6 * gainConst[mdl]);
+	vibroVal *= (gainVariable * gainConst[mdl]);
 	if (vibroVal > 10.0)vibroVal = 10.0;
 	if (vibroVal < -10.0)vibroVal = -10.0;
 	if (running) { WriteData(vibroVal); }

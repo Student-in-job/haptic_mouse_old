@@ -152,6 +152,7 @@
     <ClInclude Include="helpers.h" />
     <ClInclude Include="interpol_rbf.h" />
     <ClInclude Include="lib.h" />
+    <ClInclude Include="libCOM.h" />
     <ClInclude Include="libDAQmx.h" />
     <ClInclude Include="libGUI.h" />
     <ClInclude Include="main.h" />
@@ -162,6 +163,7 @@
   <ItemGroup>
     <ClCompile Include="helpers.cpp" />
     <ClCompile Include="lib.cpp" />
+    <ClCompile Include="libCOM.cpp" />
     <ClCompile Include="libDAQmx.cpp" />
     <ClCompile Include="libGUI.cpp" />
     <ClCompile Include="main.cpp" />
